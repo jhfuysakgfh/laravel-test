@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Student;
+use Illuminate\Support\Facades\Storage;
 class StudentController extends Controller
 {
     public function index()
@@ -104,6 +105,59 @@ class StudentController extends Controller
             'message' => 'Student updated successfully',
             'data' => $student->fresh()
         ], 200);
+    }
+    public function patch(request $request,string $id){
+        $student = Student::find($id);
+
+        if (!$student) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Student not found'
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+
+            'roll_no' => [
+                'required',
+                'integer',
+                'min:1',
+                Rule::unique('students', 'roll_no')->ignore($student->id)
+            ],
+
+            'section' => 'sometimes|required|string|max:100',
+            'class' => 'sometimes|required|string|max:100',
+
+            'email' => [
+                'sometimes|required',
+                'email',
+                'max:255',
+                Rule::unique('students', 'email')->ignore($student->id)
+            ],
+
+            'image' => 'sometimes|nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+        ]);
+
+        if ($request->hasFile('image')) {
+            $path = $request->file('image')->store('students', 'public');
+            $validated['image'] = $path;
+        }
+        if(!$validated){
+            return response()->json([
+                'success' => false,
+                'message' => 'fill at least one field'
+            ],422);
+        }
+
+        $student->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Student Partially updated successfully',
+            'data' => $student->fresh()
+        ], 200);
+
     }
     public function destroy(string $id){
         $student = Student::find($id);
