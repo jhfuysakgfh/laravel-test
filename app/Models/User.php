@@ -9,6 +9,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
 use App\Models\Product;
 use App\Models\Student;
+use App\Models\Profile;
 
 class User extends Authenticatable
 {
@@ -41,5 +42,9 @@ class User extends Authenticatable
     public function students()
     {
         return $this->hasMany(Student::class);
+    }
+    public function profile()
+    {
+        return $this->hasOne(Profile::class);
     }
 }

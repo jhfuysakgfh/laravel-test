@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
 use App\Models\Product;
+use App\Http\Requests\StoreProductRequest;
 
 class ProductController extends Controller
 {
@@ -15,6 +16,8 @@ class ProductController extends Controller
         $validated = $request->validate([
         'per_page' => 'sometimes|integer|min:1|max:50',
         'search' => 'sometimes|string|max:255',
+        'min_price' => 'sometimes|numeric|min:0',
+        'max_price' => 'sometimes|numeric|min:0',
     ]);
     $per_page = $validated['per_page'] ?? 10;
     $query = $request->user()->products();
@@ -27,6 +30,16 @@ class ProductController extends Controller
               ->orWhere('description', 'ILIKE', "%{$search}%");
         });
     }
+    // Filter by minimum price
+    if (isset($validated['min_price'])) {
+        $query->where('price', '>=', $validated['min_price']);
+    }
+
+    // Filter by maximum price
+    if (isset($validated['max_price'])) {
+        $query->where('price', '<=', $validated['max_price']);
+    }
+
         $products = $query->paginate($per_page);
 
         return ProductResource::collection($products)
@@ -38,14 +51,9 @@ class ProductController extends Controller
     }
 
     // Create product and automatically assign owner
-    public function store(Request $request)
+    public function store(StoreProductRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'description' => 'nullable|string|max:1000',
-            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
-        ]);
+        $validated = $request->validated();
 
         $path = $request->file('image')->store('products', 'public');
 

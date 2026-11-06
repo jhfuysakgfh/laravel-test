@@ -33,6 +33,13 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::put('/student/{id}', [StudentController::class, 'update']);
     Route::patch('/student/{id}', [StudentController::class, 'patch']);
     Route::delete('/student/{id}', [StudentController::class, 'destroy']);
+
+    Route::get('/forbidden-test', function () {
+        throw new \Illuminate\Auth\Access\AuthorizationException('Access denied.');
+    });
+    Route::get('/server-error-test', function () 
+        {throw new \RuntimeException('This is a test server error.');
+    });
 });
 
 Route::get('/test-request', [RequestTestController::class, 'test']);
