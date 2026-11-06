@@ -3,23 +3,41 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\ProductResource;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use App\Models\Product;
+
 class ProductController extends Controller
 {
-    public function index()
+    // Get only logged-in user's products
+    public function index(Request $request)
     {
-        
-        $products = Product::all();
+        $validated = $request->validate([
+        'per_page' => 'sometimes|integer|min:1|max:50',
+        'search' => 'sometimes|string|max:255',
+    ]);
+    $per_page = $validated['per_page'] ?? 10;
+    $query = $request->user()->products();
+    // print_r($validated);die;
+    if (!empty($validated['search'])) {
+        $search = $validated['search'];
 
-        return response()->json([
-            'success' => true,
-            'data' => $products,
-        ]);
+        $query->where(function ($q) use ($search) {
+            $q->where('name', 'ILIKE', "%{$search}%")
+              ->orWhere('description', 'ILIKE', "%{$search}%");
+        });
     }
-    
+        $products = $query->paginate($per_page);
+
+        return ProductResource::collection($products)
+        ->additional([
+            'success' => true
+
+        ]);
+        
+    }
+
+    // Create product and automatically assign owner
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -29,48 +47,24 @@ class ProductController extends Controller
             'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        $image = $request->file('image');
-
-        $path = $image->store('products', 'public');
+        $path = $request->file('image')->store('products', 'public');
 
         $validated['image'] = $path;
 
-        $product = Product::create($validated);
+        // user_id is assigned by Laravel, not by Postman
+        $product = $request->user()->products()->create($validated);
 
         return response()->json([
             'success' => true,
             'message' => 'Product created successfully',
-            'data' => $product
+            'data' => new ProductResource($product)
         ], 201);
     }
 
-    public function show(string $id){
-        $product = Product::find($id);
-        if(!$product){
-            return response()->json([
-                'success' => false,
-                'message' => 'Data not found'
-            ],404);
-
-        }
-        return response()->json([
-            'success' => true,
-            'data' => $product
-
-        ],200);
-    }
-
-     public function update(Request $request, string $id)
+    // Get one product belonging to logged-in user
+    public function show(Request $request, string $id)
     {
-
-        // return response()->json([
-        //     'message' => 'Update function reached',
-        //     'id' => $id,
-        //     'method' => $request->method(),
-        //     'data' => $request->all()
-        // ]);
-    
-        $product = Product::find($id);
+        $product = $request->user()->products()->find($id);
 
         if (!$product) {
             return response()->json([
@@ -79,18 +73,34 @@ class ProductController extends Controller
             ], 404);
         }
 
-        // print_r($request); die;
+        return response()->json([
+            'success' => true,
+            'data' => new ProductResource($product)
+        ], 200);
+    }
+
+    // Fully update a product
+    public function update(Request $request, string $id)
+    {
+        $product = $request->user()->products()->find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
             'description' => 'nullable|string|max:1000',
             'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            ]);
-            
-            
+        ]);
+
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('products', 'public');
-            $validated['image'] = $path;
+            $validated['image'] = $request->file('image')
+                ->store('products', 'public');
         }
 
         $product->update($validated);
@@ -98,12 +108,14 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Product updated successfully',
-            'data' => $product
+            'data' => new ProductResource($product->fresh())
         ], 200);
     }
+
+    // Partially update a product
     public function patch(Request $request, string $id)
     {
-        $product = Product::find($id);
+        $product = $request->user()->products()->find($id);
 
         if (!$product) {
             return response()->json([
@@ -136,15 +148,27 @@ class ProductController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Product partially updated successfully',
-            'data' => $product->fresh()
+            'data' => new ProductResource($product->fresh())
         ], 200);
     }
-    public function destroy(string $id){
-        $product = Product::find($id);
+
+    // Delete only logged-in user's product
+    public function destroy(Request $request, string $id)
+    {
+        $product = $request->user()->products()->find($id);
+
+        if (!$product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Product not found'
+            ], 404);
+        }
+
         $product->delete();
+
         return response()->json([
             'success' => true,
-            'message' => 'Deleted SuccessFully'
-        ],200);
+            'message' => 'Product deleted successfully'
+        ], 200);
     }
 }

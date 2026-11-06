@@ -1,67 +1,74 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\StudentResource;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\Student;
-use Illuminate\Support\Facades\Storage;
+
 class StudentController extends Controller
 {
-    public function index()
+    // Get only the logged-in user's students
+    public function index(Request $request)
     {
-        
-        $student = Student::all();
+        $students = $request->user()->students()->get();
 
         return response()->json([
             'success' => true,
-            'data' => $student,
-        ]);
+            'data' => StudentResource::collection($students),
+        ], 200);
     }
-    
+
+    // Create student and automatically assign owner
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name'    => 'required|string|max:255',
+            'name' => 'required|string|max:255',
             'roll_no' => 'required|integer|min:1|unique:students,roll_no',
             'section' => 'required|string|max:100',
-            'class'   => 'required|string|max:100',
-            'email'   => 'required|email|max:255|unique:students,email',
-            'image'   => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
+            'class' => 'required|string|max:100',
+            'email' => 'required|email|max:255|unique:students,email',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
         $path = $request->file('image')->store('students', 'public');
 
         $validated['image'] = $path;
 
-        $student = Student::create($validated);
+        // Automatically assigns authenticated user's ID
+        $student = $request->user()->students()->create($validated);
 
         return response()->json([
             'success' => true,
             'message' => 'Student created successfully',
-            'data' => $student
+            'data' => new StudentResource($student)
         ], 201);
     }
 
-    public function show(string $id){
-        $student = Student::find($id);
-        if(!$student){
+    // Get one student belonging to logged-in user
+    public function show(Request $request, string $id)
+    {
+        $student = $request->user()->students()->find($id);
+
+        if (!$student) {
             return response()->json([
                 'success' => false,
-                'message' => 'Data not found'
-            ],404);
-
+                'message' => 'Student not found'
+            ], 404);
         }
+
         return response()->json([
             'success' => true,
-            'data' => $student
-
-        ],200);
+            'data' => new StudentResource($student),
+        ], 200);
     }
 
+    // Fully update a student
     public function update(Request $request, string $id)
     {
-        $student = Student::find($id);
+        $student = $request->user()->students()->find($id);
 
         if (!$student) {
             return response()->json([
@@ -94,8 +101,8 @@ class StudentController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('students', 'public');
-            $validated['image'] = $path;
+            $validated['image'] = $request->file('image')
+                ->store('students', 'public');
         }
 
         $student->update($validated);
@@ -103,11 +110,14 @@ class StudentController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Student updated successfully',
-            'data' => $student->fresh()
+            'data' => new StudentResource($student->fresh())
         ], 200);
     }
-    public function patch(request $request,string $id){
-        $student = Student::find($id);
+
+    // Partially update a student
+    public function patch(Request $request, string $id)
+    {
+        $student = $request->user()->students()->find($id);
 
         if (!$student) {
             return response()->json([
@@ -120,6 +130,7 @@ class StudentController extends Controller
             'name' => 'sometimes|required|string|max:255',
 
             'roll_no' => [
+                'sometimes',
                 'required',
                 'integer',
                 'min:1',
@@ -130,7 +141,8 @@ class StudentController extends Controller
             'class' => 'sometimes|required|string|max:100',
 
             'email' => [
-                'sometimes|required',
+                'sometimes',
+                'required',
                 'email',
                 'max:255',
                 Rule::unique('students', 'email')->ignore($student->id)
@@ -139,32 +151,44 @@ class StudentController extends Controller
             'image' => 'sometimes|nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('students', 'public');
-            $validated['image'] = $path;
-        }
-        if(!$validated){
+        if (empty($validated)) {
             return response()->json([
                 'success' => false,
-                'message' => 'fill at least one field'
-            ],422);
+                'message' => 'Please provide at least one field to update'
+            ], 422);
+        }
+
+        if ($request->hasFile('image')) {
+            $validated['image'] = $request->file('image')
+                ->store('students', 'public');
         }
 
         $student->update($validated);
 
         return response()->json([
             'success' => true,
-            'message' => 'Student Partially updated successfully',
-            'data' => $student->fresh()
+            'message' => 'Student partially updated successfully',
+            'data' => new StudentResource($student->fresh())
         ], 200);
-
     }
-    public function destroy(string $id){
-        $student = Student::find($id);
+
+    // Delete only the logged-in user's student
+    public function destroy(Request $request, string $id)
+    {
+        $student = $request->user()->students()->find($id);
+
+        if (!$student) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Student not found'
+            ], 404);
+        }
+
         $student->delete();
+
         return response()->json([
             'success' => true,
-            'message' => 'Deleted SuccessFully'
-        ],200);
+            'message' => 'Student deleted successfully'
+        ], 200);
     }
 }

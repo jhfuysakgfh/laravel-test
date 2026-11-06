@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Product;
+use App\Models\Student;
 
 class User extends Authenticatable
 {
@@ -30,5 +32,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function students()
+    {
+        return $this->hasMany(Student::class);
     }
 }
