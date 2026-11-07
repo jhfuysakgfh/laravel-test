@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\StudentController;
 use App\Http\Controllers\Api\RequestTestController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\RazorpayWebhookController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -34,17 +37,26 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::patch('/student/{id}', [StudentController::class, 'patch']);
     Route::delete('/student/{id}', [StudentController::class, 'destroy']);
 
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::put('/profile', [ProfileController::class, 'update']);
+    Route::patch('/profile', [ProfileController::class, 'patch']);
+
+    Route::post('/payments/create-order', [PaymentController::class, 'createOrder']);
+    Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+
+    
     Route::get('/forbidden-test', function () {
         throw new \Illuminate\Auth\Access\AuthorizationException('Access denied.');
-    });
-    Route::get('/server-error-test', function () 
+        });
+        Route::get('/server-error-test', function () 
         {throw new \RuntimeException('This is a test server error.');
-    });
+        });
 });
-
-Route::get('/test-request', [RequestTestController::class, 'test']);
-
-// Public authentication routes
+        
+        Route::get('/test-request', [RequestTestController::class, 'test']);
+        
+Route::post('/razorpay/webhook', [RazorpayWebhookController::class,'handle']);
+        // Public authentication routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
