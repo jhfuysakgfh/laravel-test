@@ -45,12 +45,12 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
 
     
-    Route::get('/forbidden-test', function () {
-        throw new \Illuminate\Auth\Access\AuthorizationException('Access denied.');
-        });
-        Route::get('/server-error-test', function () 
-        {throw new \RuntimeException('This is a test server error.');
-        });
+    // Route::get('/forbidden-test', function () {
+    //     throw new \Illuminate\Auth\Access\AuthorizationException('Access denied.');
+    //     });
+    // Route::get('/server-error-test', function () 
+    //     {throw new \RuntimeException('This is a test server error.');
+    //     });
 });
         
         Route::get('/test-request', [RequestTestController::class, 'test']);
