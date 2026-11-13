@@ -9,6 +9,10 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\RazorpayWebhookController;
 
+use App\Http\Controllers\API\ChapterController;
+use App\Http\Controllers\API\LessonController;
+use App\Http\Controllers\API\LessonContentController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::get('/user', function (Request $request) {
@@ -43,6 +47,22 @@ Route::middleware('auth:sanctum')->group(function(){
 
     Route::post('/payments/create-order', [PaymentController::class, 'createOrder']);
     Route::post('/payments/verify', [PaymentController::class, 'verifyPayment']);
+
+    // Chapter APIs
+    Route::apiResource('chapters', ChapterController::class);
+
+    // Lesson APIs
+    Route::apiResource('lessons', LessonController::class);
+
+    // Bilingual Lesson Content APIs
+    Route::apiResource('lesson-contents', LessonContentController::class);
+
+    Route::get(
+        'lessons/{lessonId}/languages',
+        [LessonContentController::class, 'languages']
+    );
+
+
 
     
     // Route::get('/forbidden-test', function () {
