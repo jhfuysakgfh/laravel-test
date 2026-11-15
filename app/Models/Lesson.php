@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Lesson extends Model
 {
     protected $table = 'tbl_lessons';
@@ -43,4 +44,8 @@ class Lesson extends Model
         return $this->hasMany(LessonResource::class, 'lesson_id')
             ->orderBy('sort_order');
     }
+public function aiVideoGenerations(): HasMany
+{
+    return $this->hasMany(AIVideoGeneration::class, 'lesson_id');
+}
 }

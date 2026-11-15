@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+class StudentMiddleware
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        if (!$request->user()) {
+            return redirect()->route('student.login');
+        }
+
+        if ($request->user()->role !== 'student') {
+            abort(403, 'You are not authorized to access this page.');
+        }
+
+        return $next($request);
+    }
+}

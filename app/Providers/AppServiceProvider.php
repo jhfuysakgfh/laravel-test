@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\Lesson;
+use App\Models\LessonContent;
+use App\Observers\LessonObserver;
+use App\Observers\LessonContentObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Lesson::observe(LessonObserver::class);
+
+        LessonContent::observe(LessonContentObserver::class);
     }
 }

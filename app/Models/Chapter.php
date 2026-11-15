@@ -6,17 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Chapter extends Model
 {
     protected $table = 'tbl_chapters';
 
     protected $fillable = [
-        'class_subject_id',
-        'title',
-        'description',
-        'chapter_number',
-        'is_published',
-    ];
+    'class_subject_id',
+    'book_id',
+    'title',
+    'description',
+    'chapter_number',
+    'is_published',
+];
 
     protected function casts(): array
     {
@@ -36,4 +38,8 @@ class Chapter extends Model
         return $this->hasMany(Lesson::class, 'chapter_id')
             ->orderBy('lesson_number');
     }
+    public function book(): BelongsTo
+{
+    return $this->belongsTo(Book::class, 'book_id');
+}
 }

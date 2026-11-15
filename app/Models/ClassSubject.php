@@ -29,4 +29,8 @@ class ClassSubject extends Model
     {
         return $this->hasMany(Chapter::class, 'class_subject_id');
     }
+    public function books(): HasMany
+{
+    return $this->hasMany(Book::class, 'class_subject_id');
+}
 }
